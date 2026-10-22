@@ -1,0 +1,11 @@
+case_id,ticket_id,expected,second_acceptable,predicted,raw_answer,strict_ok,either_ok
+C01,T002,billing,,billing,billing,True,True
+C02,T027,delivery,,delivery,delivery,True,True
+C03,T049,delivery,returns_refunds,returns_refunds,returns_refunds,False,True
+C04,T026,returns_refunds,product,returns_refunds,returns_refunds,True,True
+C05,T012,product,,returns_refunds,returns_refunds,False,False
+C06,T006,seller,product,seller,seller,True,True
+C07,T025,account,,account,account,True,True
+C08,T040,information,product,product,product,False,True
+C09,T062,other,,other,other,True,True
+C10,T069,seller,other,seller,seller,True,True

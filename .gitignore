@@ -1,0 +1,23 @@
+# Secrets: never commit these
+.env
+.env.*
+!.env.example
+
+# Local data and model caches
+data/
+cache/
+*.faiss
+*.index
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

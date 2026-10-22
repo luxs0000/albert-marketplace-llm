@@ -16,8 +16,9 @@ an evaluation report, prompt-injection guardrails and a cost per 1,000 calls.
 ## Team
 
 | Name | GitHub | Role |
+|---|---|---|
 | Eliott Monneraie | emonneraie-blip | Task and test cases (ADR 0001) |
-| Louis Pimont | LesCavesdAlbert | API module and structured output (ADR 0002, L02) |
+| Louis Pimont-Nishimura | LesCavesdAlbert | API module and structured output (ADR 0002, L02) |
 | Lucas Stefani | luxs0000 | Retrieval decision and injection test (ADR 0003, L03) |
 | Clément Badalucco | clementbada | Evaluation and cost (ADR 0004, L04) |
 
@@ -60,6 +61,13 @@ a chat message.
 - **If a key reaches GitHub, even for a minute, tell the teaching team at once**
   so it can be revoked. Deleting the commit does not help: the key has already
   been copied.
+
+**New member? In five lines:**
+1. Copy `.env.example` to `.env` in the repository root and paste your own key in it, using the lines that match your key (Anthropic `sk-ant-` or OpenRouter `sk-or-`).
+2. `.env` never reaches Git because `.gitignore` excludes it: anyone who can read the repo could spend on your key.
+3. The code creates the client without a key argument; the SDK reads the key from the environment.
+4. Run `git status` before every commit: `.env` must never appear in it.
+5. If a key is pushed, tell the school coordinator at once so it is revoked; deleting the commit does not help.
 
 ## Layout
 

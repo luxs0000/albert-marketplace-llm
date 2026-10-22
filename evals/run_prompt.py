@@ -71,7 +71,10 @@ def main():
             time.sleep(PAUSE)
         ticket = tickets[case["input"]]
         user = user_template.replace("{subject}", ticket["subject"]).replace("{body}", ticket["body"])
-        answer, calls = llm.route(system, user, tag=Path(prompt_file).stem, case_id=case["case_id"])
+        try:
+            answer, calls = llm.route(system, user, tag=Path(prompt_file).stem, case_id=case["case_id"])
+        except (llm.anthropic.AuthenticationError, llm.anthropic.PermissionDeniedError) as e:
+            sys.exit(f"The API refused the key ({e.status_code}): check the key in .env")
         tokens_in += sum(c["input_tokens"] for c in calls)
         tokens_out += sum(c["output_tokens"] for c in calls)
         reprompts += len(calls) - 1
@@ -98,7 +101,8 @@ def main():
                      "strict_ok": strict_ok, "either_ok": either_ok})
 
     cost = tokens_in / 1e6 * PRICE_IN + tokens_out / 1e6 * PRICE_OUT
-    today = datetime.date.today().isoformat()
+    now = datetime.datetime.now()
+    today = now.date().isoformat()
     n = len(cases)
 
     print()
@@ -109,8 +113,9 @@ def main():
     print(f"re-prompts: {reprompts} | gave up: {gave_up}")
     print(f"tokens: {tokens_in} in, {tokens_out} out | cost: ${cost:.4f} | per 1,000 tickets: ${cost / n * 1000:.2f}")
 
-    # Keep the run: one file per run, so a figure can always be traced back
-    out = Path("evals/runs") / f"{today}_{Path(prompt_file).stem}.csv"
+    # Keep the run: one file per run, so a figure can always be traced back.
+    # The time is in the name, so a second run on the same day does not replace the first
+    out = Path("evals/runs") / f"{now:%Y-%m-%d_%H%M%S}_{Path(prompt_file).stem}.csv"
     out.parent.mkdir(exist_ok=True)
     with open(out, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))

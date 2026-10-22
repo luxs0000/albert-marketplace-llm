@@ -34,6 +34,8 @@ L01 run: model claude-haiku-4-5, date 2026-10-22, max_tokens 20, test file `eval
 
 What the errors show: the one real error (C05, T012) is a disappointed customer read as a refund request (`product` → `returns_refunds`). The two other strict errors chose the second acceptable label (C03 delivery → returns_refunds, C08 information → product). Ten cases cannot settle more than that: one error is ten points.
 
+T012 complains about the eyelashes' quality and ends by asking what can be done. The label stays product: the customer describes the product, and does not explicitly ask for a refund. This case shows the boundary between product and returns_refunds that the next prompt must make clearer.
+
 ## Deployment recommendation
 
 Which variant you would deploy, what it costs, what it gets wrong, and what would make you change your mind.

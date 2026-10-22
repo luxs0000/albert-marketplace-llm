@@ -16,11 +16,10 @@ an evaluation report, prompt-injection guardrails and a cost per 1,000 calls.
 ## Team
 
 | Name | GitHub | Role |
-|---|---|---|
-| | | |
-| | | |
-| | | |
-| | | |
+| Eliott Monneraie | emonneraie-blip | Task and test cases (ADR 0001) |
+| Louis Pimont | LesCavesdAlbert | API module and structured output (ADR 0002, L02) |
+| Lucas Stefani | luxs0000 | Retrieval decision and injection test (ADR 0003, L03) |
+| Clément Badalucco | clementbada | Evaluation and cost (ADR 0004, L04) |
 
 ## How this repo grows
 

@@ -37,6 +37,6 @@ We use structured outputs, with our rules checked by a Pydantic validator and at
 
 ## Consequences
 
-- Easier: no parser to maintain; every call is logged in `runs/calls.csv` with its tokens, latency, attempt, `stop_reason` and validity, so L04 can compute the cost per 1,000 calls from it.
+- Easier: no parser to maintain; every call is logged in `runs/calls.csv` with its `request_id`, tokens, latency, attempt, `stop_reason` and validity, so L04 can compute the cost per 1,000 calls from it and support can trace any call. An API error that survives the SDK's retries is logged too, and only that ticket is given up: the run goes on.
 - Harder: each ticket costs about twice as many tokens as in L01. In the worst case one ticket makes 3 calls (1 + 2 re-prompts), each retried up to 2 times by the SDK: 9 requests.
 - To watch: the pacing only protects our evaluation runs; in production a burst of tickets could still hit a 429. If it does, raise `max_retries` or replace the SDK's retries with our own policy and `max_retries=0`, in a new record that supersedes this one. The confidence is 0.75 or more on every ticket, and 0.95 on the one real error (C05): the 0.7 rule never fired, and we will check in L04 whether the confidence means anything.

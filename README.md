@@ -63,8 +63,7 @@ a chat message.
   been copied.
 
 **New member? In five lines:**
-
-1. Copy `.env.example` to `.env` in the repository root and paste your own key after `ANTHROPIC_API_KEY=`.
+1. Copy `.env.example` to `.env` in the repository root and paste your own key in it, using the lines that match your key (Anthropic `sk-ant-` or OpenRouter `sk-or-`).
 2. `.env` never reaches Git because `.gitignore` excludes it: anyone who can read the repo could spend on your key.
 3. The code creates the client without a key argument; the SDK reads the key from the environment.
 4. Run `git status` before every commit: `.env` must never appear in it.

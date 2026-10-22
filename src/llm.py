@@ -5,7 +5,8 @@
 # - If the answer is cut, refused or breaks a rule of the schema, we re-prompt with
 #   the error, at most MAX_REPROMPTS times, then give up
 # - If the API still fails after the SDK's retries, the call is logged and we give up
-#   on this ticket instead of stopping the whole run
+#   on this ticket instead of stopping the whole run; a 401 or 403 is not retried
+#   or caught, since a wrong key fails every ticket
 # - Every call is logged in runs/calls.csv, one line per call, with its request_id
 #
 # The key is read from .env (see .env.example), never written here.
@@ -72,6 +73,8 @@ def route(system, user, tag="", case_id=""):
                 messages=messages,
                 output_config={"format": OUTPUT_FORMAT},
             )
+        except (anthropic.AuthenticationError, anthropic.PermissionDeniedError):
+            raise   # a 401 or 403 will fail for every ticket: let the caller stop the run
         except anthropic.APIError as e:
             # The SDK has already retried: note the failure and give up on this ticket
             row.update({"request_id": getattr(e, "request_id", "") or "", "stop_reason": "",

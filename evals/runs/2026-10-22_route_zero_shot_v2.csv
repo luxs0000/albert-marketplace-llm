@@ -1,0 +1,11 @@
+case_id,ticket_id,expected,second_acceptable,predicted,confidence,second_label,calls,strict_ok,either_ok
+C01,T002,billing,,billing,0.95,,1,True,True
+C02,T027,delivery,,delivery,0.95,,1,True,True
+C03,T049,delivery,returns_refunds,returns_refunds,0.95,delivery,1,False,True
+C04,T026,returns_refunds,product,returns_refunds,0.95,,1,True,True
+C05,T012,product,,returns_refunds,0.95,product,1,False,False
+C06,T006,seller,product,seller,0.75,product,1,True,True
+C07,T025,account,,account,0.95,,1,True,True
+C08,T040,information,product,product,0.85,seller,1,False,True
+C09,T062,other,,other,0.95,,1,True,True
+C10,T069,seller,other,seller,0.95,,1,True,True

@@ -1,24 +1,23 @@
 # Runs one prompt from prompts/ on the test cases in evals/test_cases.csv
 # and prints the error rate with its four facts: model, date, parameters, test file.
+# Every call goes through src/llm.py, which also logs it in runs/calls.csv.
 #
-# Usage:  python evals/run_prompt.py prompts/route_zero_shot.md
+# Usage:  python evals/run_prompt.py prompts/route_zero_shot_v2.md
 
 import csv
 import datetime
 import hashlib
 import sys
+import time
 import urllib.request
 from pathlib import Path
 
-import anthropic
-from dotenv import load_dotenv
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src import llm  # noqa: E402
 
-MODEL = "claude-haiku-4-5"
-MAX_TOKENS = 20
 PRICE_IN = 1.00   # $ per million input tokens (Haiku 4.5)
 PRICE_OUT = 5.00  # $ per million output tokens
-
-LABELS = ["billing", "delivery", "returns_refunds", "account", "seller", "product", "information", "other"]
+PAUSE = 4         # seconds between tickets: OpenRouter allows new accounts 20 requests a minute
 
 DATA_URL = ("https://github.com/TangoAI-AlbertSchool-Data-Eng-Cloud/albert-marketplace"
             "/releases/download/tickets-v1.0.0/tickets_v1.csv")
@@ -51,19 +50,8 @@ def load_prompt(path):
     return system, user_template
 
 
-def find_label(answer):
-    # The first known label in the answer, or "" if there is none
-    answer = answer.strip().lower()
-    for word in answer.replace(",", " ").replace(".", " ").split():
-        if word in LABELS:
-            return word
-    return ""
-
-
 def main():
-    prompt_file = sys.argv[1] if len(sys.argv) > 1 else "prompts/route_zero_shot.md"
-    load_dotenv()
-    client = anthropic.Anthropic()
+    prompt_file = sys.argv[1] if len(sys.argv) > 1 else "prompts/route_zero_shot_v2.md"
     tickets = load_tickets()
     system, user_template = load_prompt(prompt_file)
 
@@ -73,22 +61,26 @@ def main():
     rows = []
     strict_errors = 0
     either_errors = 0
+    gave_up = 0
+    reprompts = 0
     tokens_in = 0
     tokens_out = 0
 
-    for case in cases:
+    for i, case in enumerate(cases):
+        if i:
+            time.sleep(PAUSE)
         ticket = tickets[case["input"]]
         user = user_template.replace("{subject}", ticket["subject"]).replace("{body}", ticket["body"])
-        response = client.messages.create(
-            model=MODEL,
-            max_tokens=MAX_TOKENS,
-            system=system,
-            messages=[{"role": "user", "content": user}],
-        )
-        answer = response.content[0].text
-        predicted = find_label(answer)
-        tokens_in += response.usage.input_tokens
-        tokens_out += response.usage.output_tokens
+        try:
+            answer, calls = llm.route(system, user, tag=Path(prompt_file).stem, case_id=case["case_id"])
+        except (llm.anthropic.AuthenticationError, llm.anthropic.PermissionDeniedError) as e:
+            sys.exit(f"The API refused the key ({e.status_code}): check the key in .env")
+        tokens_in += sum(c["input_tokens"] for c in calls)
+        tokens_out += sum(c["output_tokens"] for c in calls)
+        reprompts += len(calls) - 1
+        if answer is None:
+            gave_up += 1
+        predicted = answer.label if answer else ""
 
         strict_ok = predicted == case["expected"]
         either_ok = strict_ok or (predicted != "" and predicted == case["second_acceptable"])
@@ -98,25 +90,32 @@ def main():
             either_errors += 1
 
         print(case["case_id"], case["input"], "expected:", case["expected"], "| got:", predicted,
+              f"({answer.confidence:.2f})" if answer else "(gave up)",
               "" if either_ok else "  <-- error")
         rows.append({"case_id": case["case_id"], "ticket_id": case["input"],
                      "expected": case["expected"], "second_acceptable": case["second_acceptable"],
-                     "predicted": predicted, "raw_answer": answer.strip(),
+                     "predicted": predicted,
+                     "confidence": answer.confidence if answer else "",
+                     "second_label": (answer.second_label or "") if answer else "",
+                     "calls": len(calls),
                      "strict_ok": strict_ok, "either_ok": either_ok})
 
     cost = tokens_in / 1e6 * PRICE_IN + tokens_out / 1e6 * PRICE_OUT
-    today = datetime.date.today().isoformat()
+    now = datetime.datetime.now()
+    today = now.date().isoformat()
     n = len(cases)
 
     print()
     print(f"prompt: {prompt_file}")
-    print(f"model: {MODEL} | date: {today} | max_tokens={MAX_TOKENS} | test file: {TEST_FILE}")
+    print(f"model: {llm.MODEL} | date: {today} | max_tokens={llm.MAX_TOKENS} | test file: {TEST_FILE}")
     print(f"strict errors: {strict_errors}/{n} ({strict_errors / n:.0%})")
     print(f"either-label errors: {either_errors}/{n} ({either_errors / n:.0%})")
+    print(f"re-prompts: {reprompts} | gave up: {gave_up}")
     print(f"tokens: {tokens_in} in, {tokens_out} out | cost: ${cost:.4f} | per 1,000 tickets: ${cost / n * 1000:.2f}")
 
-    # Keep the run: one file per run, so a figure can always be traced back
-    out = Path("evals/runs") / f"{today}_{Path(prompt_file).stem}.csv"
+    # Keep the run: one file per run, so a figure can always be traced back.
+    # The time is in the name, so a second run on the same day does not replace the first
+    out = Path("evals/runs") / f"{now:%Y-%m-%d_%H%M%S}_{Path(prompt_file).stem}.csv"
     out.parent.mkdir(exist_ok=True)
     with open(out, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))

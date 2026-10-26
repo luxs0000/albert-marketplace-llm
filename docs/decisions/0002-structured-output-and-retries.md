@@ -1,6 +1,6 @@
 # 0002: Get the routing as structured outputs, with the SDK as the only retry layer
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-22
 - **Author:** Louis Pimont-Nishimura
 - **Lesson:** L02

@@ -30,6 +30,11 @@ Zero-shot, few-shot and chain-of-thought on the same 30 test cases (L04).
 |---|---|---|---|---|
 | Zero-shot (L01, 10 cases) | strict 3/10 (30%), either-label 1/10 (10%) | $0.53 | not measured | `prompts/route_zero_shot.md` |
 | Zero-shot, structured outputs (L02, 10 cases) | strict 3/10 (30%), either-label 1/10 (10%) | $1.02 | median 1.7 s | `prompts/route_zero_shot_v2.md` |
+| Zero-shot (L04, 30 cases) | either-label 7/30 (23%), strict 15/30 | $1.03 | median 1.3 s, p90 1.5 s | `prompts/route_zero_shot_v2.md` |
+| Few-shot (L04, 30 cases) | either-label 6/30 (20%), strict 16/30 | $2.97 | median 1.2 s, p90 1.6 s | `prompts/route_few_shot.md` |
+| Chain-of-thought (L04, 30 cases) | either-label 9/30 (30%), strict 17/30 | $1.69 | median 2.6 s, p90 3.7 s | `prompts/route_cot.md` |
+
+L04 runs: claude-haiku-4-5 via OpenRouter, 2026-10-26, test file `evals/test_cases.csv` (30 cases), judge claude-sonnet-5-5. The full report, the judge, the failure modes and the injection tests: [docs/evaluation.md](evaluation.md); the choice: [0004](decisions/0004-evaluation.md).
 
 L01 run: model claude-haiku-4-5, date 2026-10-22, max_tokens 20, test file `evals/test_cases.csv`. Tokens: 5,098 in, 49 out, cost $0.0053 for the run. Details in `evals/runs/2026-10-22_route_zero_shot.csv`.
 
@@ -37,7 +42,7 @@ What the errors show: the one real error (C05, T012) is a disappointed customer 
 
 Correction (L02 review): T012 does ask for a refund. After complaining about the eyelashes' quality, the customer writes "Can I send them back and get my money back?". Our own prompt rule, "if two labels fit, choose the one that names what the customer asks us to do", then points to returns_refunds, and it does the same for C03 (T049, a late parcel the customer wants to send back). So 2 of the 3 strict errors come from our prompt and our labels, not from the model. Whether T012 is product or returns_refunds, and how the rule should handle a customer who asks to send an item back, is left to the prompt v3 in L04; the test labels are unchanged until then.
 
-L02 run, through `src/llm.py`: model claude-haiku-4-5 via OpenRouter, date 2026-10-22, max_tokens 200, structured outputs with the schema `Route` (`src/schema.py`), SDK retries 2, test file `evals/test_cases.csv`. Tokens: 9,108 in, 211 out, cost $0.0102 for the run; 10 calls, 0 re-prompts, 0 give-ups. Details per ticket in `evals/runs/2026-10-22_route_zero_shot_v2.csv`, per call in `runs/calls.csv`. See [0002](decisions/0002-structured-outputs-sdk-retries.md).
+L02 run, through `src/llm.py`: model claude-haiku-4-5 via OpenRouter, date 2026-10-22, max_tokens 200, structured outputs with the schema `Route` (`src/schema.py`), SDK retries 2, test file `evals/test_cases.csv`. Tokens: 9,108 in, 211 out, cost $0.0102 for the run; 10 calls, 0 re-prompts, 0 give-ups. Details per ticket in `evals/runs/2026-10-22_route_zero_shot_v2.csv`, per call in `runs/calls.csv`. See [0002](decisions/0002-structured-output-and-retries.md).
 
 What changed: the errors did not. The same three cases fail (C03, C05, C08), so structured outputs fixed the format, not the routing. The cost per ticket roughly doubled, mostly in input tokens (about 911 against 510). The model's confidence was 0.75 or more on every ticket, and 0.95 on C05, the one real error: the confidence does not yet flag the tickets it gets wrong.
 
@@ -49,4 +54,8 @@ Injection test: two tickets that hide an instruction (`evals/injection_cases.csv
 
 ## Deployment recommendation
 
-Which variant you would deploy, what it costs, what it gets wrong, and what would make you change your mind.
+Deploy the zero-shot prompt (`prompts/route_zero_shot_v2.md`) on claude-haiku-4-5: 23 of 30 test tickets routed to a right team, $1.03 per 1,000 tickets, 1.3 s at the median (2026-10-26, `docs/evaluation.md`). Few-shot is one case ahead at almost three times the price, a difference 30 cases cannot separate; chain-of-thought is less often right, dearer and twice as slow.
+
+What it gets wrong: complaints that end with a refund request (sent to returns_refunds by our own tie-break rule), orders placed on someone else's account, and items outside the catalogue. Its confidence does not flag these: C27 is wrong at 0.95.
+
+What would change our mind: a prompt v3 that states those three conventions and beats v2 on the same 30 cases; few-shot staying ahead on a larger set; or Claude Haiku 5.5 matching it at a tenth of the price per token.

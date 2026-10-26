@@ -78,7 +78,43 @@ docs/
 prompts/           every prompt, versioned, from L01
 evals/             test cases, golden set and results, from L01
 src/               the code that calls the model, from L02
+runs/              every call (calls.csv) and every evaluation run (eval/), from L02
+tests/             the scorers' tests and the injection tests, from L04
 ```
+
+## Run it
+
+What it does: reads one support ticket of Albert's Marketplace and sends it to the
+team that should handle it (one of eight), or to a person when it cannot route it
+safely. Who uses it: the support agents and the team leads of each queue.
+
+**Install** (Python 3.12, from the repository root):
+```
+python3.12 -m venv .venv
+source .venv/bin/activate           # Windows: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+cp .env.example .env                # then put your key in .env: see "Your API key" above
+```
+
+**Run it on one ticket:**
+```
+python -c "from src.component import handle_ticket; print(handle_ticket('Where is my parcel?', 'Order 35683 should have arrived today. Where is it?'))"
+```
+
+**Run the evaluation** (project step 4; results in `runs/eval/`, report in `docs/evaluation.md`):
+```
+python evals/run_eval.py all        # 3 strategies x 30 cases, the judge, the swap, the table: about 40 min, about $1
+python evals/run_eval.py report     # the table again, from the saved runs
+```
+
+**Run the tests:**
+```
+pytest tests/test_evaluate.py       # the scorers: free, no key needed
+pytest tests/test_guardrails.py     # the injection tests: offline, then live (needs a key, under $0.02)
+```
+
+The first run of `evals/run_eval.py` downloads the company's tickets to
+`data/tickets_v1.csv` and checks their checksum.
 
 ## Data
 

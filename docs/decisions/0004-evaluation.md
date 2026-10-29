@@ -1,6 +1,6 @@
 # 0004: Score the label by exact match, check it with a Sonnet 5.5 judge, and deploy the zero-shot prompt
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-26
 - **Author:** Clément Badalucco
 - **Lesson:** L04

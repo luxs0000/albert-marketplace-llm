@@ -2,7 +2,7 @@
 
 Status: accepted
 Date: 2026-10-22
-Author: Eliott Monneraie
+Author: Eliott Monneraie, Khaled Elnagar
 Lesson: L01
 
 ## Context

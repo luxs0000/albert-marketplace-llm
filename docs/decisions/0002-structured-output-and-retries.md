@@ -2,7 +2,7 @@
 
 - **Status:** accepted
 - **Date:** 2026-10-22
-- **Author:** Louis Pimont-Nishimura
+- **Author:** Louis Pimont-Nishimura, Khaled Elnagar
 - **Lesson:** L02
 
 ## Context

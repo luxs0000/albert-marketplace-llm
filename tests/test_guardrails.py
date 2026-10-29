@@ -75,11 +75,12 @@ def test_offline_a_real_ticket_is_routed_normally():
 
 def test_offline_no_ticket_of_the_release_trips_the_check():
     # False positives on the company's 120 real tickets: none should be read as an attack
-    data = ROOT / "data/tickets_v1.csv"
-    if not data.exists():
-        pytest.skip("run python evals/run_prompt.py once to download data/tickets_v1.csv")
-    with open(data, encoding="utf-8") as f:
-        tickets = list(csv.DictReader(f))
+    # The tickets are downloaded once and their checksum checked (no API call, no key needed)
+    from evals.run_prompt import load_tickets
+    try:
+        tickets = list(load_tickets().values())
+    except OSError as e:
+        pytest.skip(f"could not download data/tickets_v1.csv: {e}")
     flagged = [t["ticket_id"] for t in tickets
                if component.labels_named_by_instructions(f"{t['subject']}\n{t['body']}")]
     assert flagged == []

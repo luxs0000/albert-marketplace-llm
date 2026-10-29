@@ -74,7 +74,9 @@ a chat message.
 ```
 docs/
   component.md     the task, the users, the deployment recommendation
+  evaluation.md    the evaluation report, from L04
   decisions/       one record per decision
+  defence/         the slides of the oral defence, as a PDF, from L05
 prompts/           every prompt, versioned, from L01
 evals/             test cases, golden set and results, from L01
 src/               the code that calls the model, from L02
@@ -93,8 +95,10 @@ safely. Who uses it: the support agents and the team leads of each queue.
 python3.12 -m venv .venv
 source .venv/bin/activate           # Windows: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-cp .env.example .env                # then put your key in .env: see "Your API key" above
+cp .env.example .env                # Windows: copy .env.example .env
 ```
+Then open `.env` and put your key in it: one line for an Anthropic key, two
+lines for an OpenRouter key (see "Your API key" above).
 
 **Run it on one ticket:**
 ```
@@ -113,8 +117,18 @@ pytest tests/test_evaluate.py       # the scorers: free, no key needed
 pytest tests/test_guardrails.py     # the injection tests: offline, then live (needs a key, under $0.02)
 ```
 
-The first run of `evals/run_eval.py` downloads the company's tickets to
-`data/tickets_v1.csv` and checks their checksum.
+The first run of `evals/run_eval.py` or of the tests downloads the company's
+tickets to `data/tickets_v1.csv` and checks their checksum. Every call to the
+model adds a row to `runs/calls.csv`, and every report is saved in `runs/eval/`.
+
+**If something fails:**
+
+| You see | What it means | What to do |
+|---|---|---|
+| `Could not resolve authentication method` | no key in `.env` | put your key in `.env`, next to `.env.example`, with no quotes or spaces around `=` |
+| `The API refused the key (401)` | a wrong or revoked key | check the key; with an OpenRouter key, keep only the two OpenRouter lines |
+| `NotFoundError` or `404` with an OpenRouter key | the address ends in `/api/v1` | it must be exactly `https://openrouter.ai/api` |
+| `5 skipped` in `tests/test_guardrails.py` | no key in `.env`: the 5 live attacks are skipped | normal without a key; the 11 offline tests still run |
 
 ## Data
 

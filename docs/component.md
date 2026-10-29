@@ -20,7 +20,7 @@ A prompt-driven classifier. The answer to "which team?" is in the ticket itself:
 | Output | one label: billing, delivery, returns_refunds, account, seller, product, information, other |
 | Data used | `tickets_v1.csv`, release tickets-v1.0.0 of the company repo, sha256 `df81753e…41018a`, downloaded and checked by `evals/run_prompt.py` |
 
-Test cases: 10 tickets in `evals/test_cases.csv`, covering the 8 labels, 3 languages, 5 with a second acceptable label. They are not among the tickets used in class (T005, T008, T016, T018, T023, T024, T032, T034, T042, T045).
+Test cases: 30 tickets in `evals/test_cases.csv` (10 from L01, 20 added in L04), covering the 8 labels and the 3 languages (5 in French, 5 in German), 21 with a second acceptable label, each checked by a member who did not write it. They are not among the tickets used in class (T005, T008, T016, T018, T023, T024, T032, T034, T042, T045) nor among the eight examples of the few-shot prompt.
 
 ## Strategies compared
 
@@ -30,6 +30,11 @@ Zero-shot, few-shot and chain-of-thought on the same 30 test cases (L04).
 |---|---|---|---|---|
 | Zero-shot (L01, 10 cases) | strict 3/10 (30%), either-label 1/10 (10%) | $0.53 | not measured | `prompts/route_zero_shot.md` |
 | Zero-shot, structured outputs (L02, 10 cases) | strict 3/10 (30%), either-label 1/10 (10%) | $1.02 | median 1.7 s | `prompts/route_zero_shot_v2.md` |
+| Zero-shot (L04, 30 cases) | either-label 7/30 (23%), strict 15/30 | $1.03 | median 1.3 s, p90 1.5 s | `prompts/route_zero_shot_v2.md` |
+| Few-shot (L04, 30 cases) | either-label 6/30 (20%), strict 16/30 | $2.97 | median 1.2 s, p90 1.6 s | `prompts/route_few_shot.md` |
+| Chain-of-thought (L04, 30 cases) | either-label 9/30 (30%), strict 17/30 | $1.69 | median 2.6 s, p90 3.7 s | `prompts/route_cot.md` |
+
+L04 runs: claude-haiku-4-5 via OpenRouter, 2026-10-26, test file `evals/test_cases.csv` (30 cases), judge claude-sonnet-5-5. The full report, the judge, the failure modes and the injection tests: [docs/evaluation.md](evaluation.md); the choice: [0004](decisions/0004-evaluation.md).
 
 L01 run: model claude-haiku-4-5, date 2026-10-22, max_tokens 20, test file `evals/test_cases.csv`. Tokens: 5,098 in, 49 out, cost $0.0053 for the run. Details in `evals/runs/2026-10-22_route_zero_shot.csv`.
 
@@ -49,4 +54,8 @@ Injection test: two tickets that hide an instruction (`evals/injection_cases.csv
 
 ## Deployment recommendation
 
-Which variant you would deploy, what it costs, what it gets wrong, and what would make you change your mind.
+Deploy the zero-shot prompt (`prompts/route_zero_shot_v2.md`) on claude-haiku-4-5: 23 of 30 test tickets routed to a right team, $1.03 per 1,000 tickets, 1.3 s at the median (2026-10-26, `docs/evaluation.md`). Few-shot is one case ahead at almost three times the price, a difference 30 cases cannot separate; chain-of-thought is less often right, dearer and twice as slow.
+
+What it gets wrong: complaints that end with a refund request (sent to returns_refunds by our own tie-break rule), orders placed on someone else's account, and items outside the catalogue. Its confidence flags only some of them: below 0.7 a ticket goes to a person (C18 and C24, both wrong), but C27 is wrong at 0.95.
+
+What would change our mind: a prompt v3 that states those three conventions and beats v2 on the same 30 cases; few-shot staying ahead on a larger set; or Claude Haiku 5.5 matching it at a tenth of the price per token.

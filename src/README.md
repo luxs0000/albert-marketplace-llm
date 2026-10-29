@@ -13,4 +13,14 @@ in the code.
   checked `Route`, or `None` after two failed re-prompts, and logs every call in
   `runs/calls.csv`. Why it works this way: [ADR 0002](../docs/decisions/0002-structured-output-and-retries.md).
 
-Run from the repository root: `python evals/run_prompt.py prompts/route_zero_shot_v2.md`.
+- `llm.py`, from L04: `ask(system, user, schema, model, max_tokens)` is the same
+  call for any schema and model, so the chain-of-thought prompt (`RouteCoT`) and the
+  judge (`JudgeScore`, `JudgeChoice`, on Claude Sonnet 5.5) go through it too.
+- `component.py` (L04): the whole component, `handle_ticket(subject, body)`, and the
+  output check that decides what is sent: a team, or a person (`triage`) when the
+  call gave up or the label is the one an instruction in the ticket asked for.
+- `evaluate.py` (L04): exact match on the label, the judge, the swap, cost and
+  latency, the Pareto front, and the judge's calibration against our own scores.
+
+Run from the repository root: `python evals/run_prompt.py prompts/route_zero_shot_v2.md`,
+or `python evals/run_eval.py all` for the evaluation of L04.

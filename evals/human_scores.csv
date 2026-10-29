@@ -1,0 +1,11 @@
+case_id,ticket_id,variant,answer_json,scored_by,correct_label,second_label,confidence,format_and_grounding,score,note
+C03,T049,zero_shot,"{""label"":""returns_refunds"",""confidence"":0.95,""second_label"":null}",Clément Badalucco,,,,,4,"right team (second acceptable); 0.95 on a ticket that fits two teams, no second label"
+C05,T012,zero_shot,"{""label"":""returns_refunds"",""confidence"":0.95,""second_label"":""product""}",Clément Badalucco,,,,,3,"wrong team, the right one (product) is second, at 0.95"
+C08,T040,zero_shot,"{""label"":""product"",""confidence"":0.85,""second_label"":""seller""}",Clément Badalucco,,,,,4,right team (second acceptable); second label seller has no support in the ticket
+C11,T007,zero_shot,"{""label"":""returns_refunds"",""confidence"":0.95,""second_label"":null}",Clément Badalucco,,,,,4,"right team (second acceptable); seller, the team that sent the wrong item, should be second"
+C15,T029,zero_shot,"{""label"":""delivery"",""confidence"":0.85,""second_label"":""billing""}",Clément Badalucco,,,,,4,right team; second label billing is unrelated (seller would fit)
+C17,T036,zero_shot,"{""label"":""product"",""confidence"":0.75,""second_label"":""returns_refunds""}",Clément Badalucco,,,,,4,"right team (second acceptable); confidence fits an ambiguous ticket, second label is not the recorded one"
+C21,T067,zero_shot,"{""label"":""seller"",""confidence"":0.95,""second_label"":""returns_refunds""}",Clément Badalucco,,,,,4,right team on a clear ticket; second label returns_refunds is doubtful
+C24,T084,zero_shot,"{""label"":""information"",""confidence"":0.65,""second_label"":""account""}",Clément Badalucco,,,,,2,"wrong team: a formal objection to terms, not a question; low confidence signals the doubt"
+C27,T101,zero_shot,"{""label"":""delivery"",""confidence"":0.95,""second_label"":null}",Clément Badalucco,,,,,2,"wrong team: misses the child ordering on a parent account, at 0.95"
+C30,T050,zero_shot,"{""label"":""product"",""confidence"":0.85,""second_label"":""returns_refunds""}",Clément Badalucco,,,,,5,"right team, sensible second label"

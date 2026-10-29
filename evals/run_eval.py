@@ -270,10 +270,15 @@ def report():
         name = hs[0]["variant"]
         jf = latest("judged", name)
         rows = evaluate.calibrate(jf) if jf else []
-        if rows:
-            lines += ["", f"Calibration on {len(rows)} cases scored by hand ({name}): same overall score "
-                          f"{sum(r['same_score'] for r in rows)}/{len(rows)}, same right / not right "
-                          f"{sum(r['same_right'] for r in rows)}/{len(rows)}."]
+        for member in sorted({r["scored_by"] for r in rows}):
+            mine = [r for r in rows if r["scored_by"] == member]
+            lines += ["", f"Calibration, {member}, {len(mine)} cases scored by hand ({name}): same overall "
+                          f"score as the judge {sum(r['same_score'] for r in mine)}/{len(mine)}, same right / "
+                          f"not right {sum(r['same_right'] for r in mine)}/{len(mine)}."]
+        m = evaluate.members_agreement()
+        if m["cases"]:
+            lines += [f"Two members on the same {m['cases']} cases: same score {m['same_score']}/{m['cases']}, "
+                      f"same right / not right {m['same_right']}/{m['cases']}."]
 
     lines += ["", "Every case one variant got wrong (either label), to be read by a person and grouped by cause:", ""]
     for v in variants:

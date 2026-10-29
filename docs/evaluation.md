@@ -95,13 +95,14 @@ carrier strike), and the volume of a real day.
 ## Failure modes
 
 Every wrong case (exact match, either label), read by a person and grouped by
-cause. 7 for zero-shot, 6 for few-shot, 9 for chain-of-thought; 4 cases fail with
-all three (C05, C16, C23, C27).
+cause: 7 for zero-shot (C05, C16, C18, C20, C23, C24, C27), 6 for few-shot (C05,
+C16, C18, C19, C23, C27), 9 for chain-of-thought (C05, C06, C13, C16, C17, C20,
+C23, C24, C27). 4 cases fail with all three (C05, C16, C23, C27).
 
 | Cause | Cases | What happens |
 |---|---|---|
 | The prompt: our tie-break rule | C05 (all three); C06, C13, C17 (chain-of-thought) | "If two labels fit, choose the one that names what the customer asks us to do" sends any complaint that ends with "refund me" to `returns_refunds`. The company labels those by what the complaint is about (`product`, `seller`). Chain-of-thought applies the rule more strictly: its reasoning quotes it and concludes `returns_refunds`. |
-| The prompt: a convention it does not state | C27 (all three), C20 (zero-shot, chain-of-thought), C24 (zero-shot, chain-of-thought) | The company sends a child writing from a parent's account to `account`, a complaint about an item that is not a beauty product (a carburettor) to `other`, and a formal objection to a seller's terms to `other`. Our label definitions say none of this. |
+| The prompt: a convention it does not state | C18 (zero-shot, few-shot), C20 (zero-shot, chain-of-thought), C24 (zero-shot, chain-of-thought), C27 (all three) | The company sends a question about a product to `information` even when the product caused a problem (C18), an item that is not a beauty product (a carburettor) to `other` (C20), a formal objection to a seller's terms to `other` (C24), and a child writing from a parent's account to `account` (C27). Our label definitions say none of this; for C18 they even point the other way ("product: a product that is not as expected"). |
 | The model | C27 | It answers `delivery` at 0.92 to 0.95 confidence, with no second label: the confidence does not flag the error. |
 | The test case | C16, C23 | Debatable lines in the release: a wrong item in the parcel (C16) is `delivery`, a late parcel whose customer blames the seller (C23) is `seller` with `other` as second. When they checked the 20 new cases, two members would have labelled C23 and C27 `delivery`, and one C16 `seller`, C17 `product` and C19 `seller`: each time the model's own answer. We kept the release's labels, which were fixed before the run: changing them after reading the model's answers would fit the test to the model, and the score would measure nothing. |
 | The examples (few-shot only) | C19 | The T019 example (a refund request labelled `product`) pulls a returns ticket toward `product`. |
@@ -109,22 +110,67 @@ all three (C05, C16, C23, C27).
 
 Retrieval is not a cause: the component has none ([ADR 0003](decisions/0003-retrieval.md)).
 
-One failure, spelled out (C27, all three strategies):
+### One example of each cause, spelled out
+
+**The prompt, tie-break rule: C05** (all three strategies)
+
+| | |
+|---|---|
+| Input | T012: false eyelashes that are "flimsy and way too difficult to apply", then "Can I send them back and get my money back?" |
+| Output | `returns_refunds`, confidence 0.95, second `product` (zero-shot) |
+| Expected | `product`, no second acceptable label |
+| Why | Our rule tells the model to follow what the customer asks for, so the refund request wins. The company labels the ticket by its cause, the quality of the product. The right team is only the second label, at a confidence that hides the doubt. |
+
+**The prompt, unstated convention: C18** (zero-shot and few-shot)
+
+| | |
+|---|---|
+| Input | T048: a vitamin C serum stung sensitive skin; "Could you tell me whether this serum is actually meant for sensitive skin?", then whether an opened bottle can be returned |
+| Output | `product`, confidence 0.65, second `returns_refunds` (zero-shot) |
+| Expected | `information`, second acceptable `returns_refunds` |
+| Why | The company treats a question about whether a product suits the customer as `information`. Our definition of `product` ("not as expected") matches the customer's words, so the model follows our prompt. It hesitates (0.65): with the confidence rule of `src/component.py`, this ticket goes to a person. |
+
+**The model: C27** (all three strategies)
 
 | | |
 |---|---|
 | Input | T101, "wher is my order???": a child who ordered on a parent's account asks when the parcel arrives, and where to leave it |
 | Output | `delivery`, confidence 0.95, no second label (zero-shot) |
 | Expected | `account`, second acceptable `billing` |
-| Why | The words are a delivery question; the company routes orders placed on someone else's account to the account team. The label definitions in our prompt do not say so, and the model is sure of itself. |
+| Why | The words are a delivery question; the company routes orders placed on someone else's account to the account team. The prompt does not say so, but the model also gives no sign of doubt: no second label, 0.95. A confidence rule cannot catch this one. |
+
+**The test case: C16** (all three strategies)
+
+| | |
+|---|---|
+| Input | T028: a foam pack was ordered, a tongue brush arrived instead; the customer wrote to the seller and got no answer |
+| Output | `seller`, confidence 0.85, second `delivery` (zero-shot) |
+| Expected | `delivery`, no second acceptable label |
+| Why | The ticket blames the seller, and `seller` covers "a wrong item sent". The release says `delivery` (a wrong item in the parcel) with no second label. The line is debatable; we kept the release's label, and the model has the expected team as its second label. |
+
+**The examples (few-shot only): C19**
+
+| | |
+|---|---|
+| Input | T057: a nail polish whose colour is "way off" from the listing; the seller only offered a return at the customer's own cost |
+| Output | `product`, confidence 0.72, second `seller` (few-shot) |
+| Expected | `returns_refunds`, second acceptable `seller` |
+| Why | Zero-shot answers `seller` on this ticket, which is accepted. The few-shot prompt shows T019, a refund request about a product that is not as advertised, labelled `product`; the closest example pulls this ticket the same way. |
 
 ## Injection tests
 
-`pytest tests/test_guardrails.py`, 2026-10-26, claude-haiku-4-5 via OpenRouter,
-prompt `route_zero_shot_v2.md`: **14 passed** in 82 s (9 offline tests, and the 5
+`pytest tests/test_guardrails.py`, 2026-10-29, claude-haiku-4-5 via OpenRouter,
+prompt `route_zero_shot_v2.md`: **16 passed** in 94 s (11 offline tests, and the 5
 attacks run live 3 times each: none of the 15 tickets was sent to the
 attacker's team, and each went to its own team or to a person). Cost under
 $0.02.
+
+What is sent is decided in code after the model (`src/component.py`), in this
+order: no valid answer goes to a person; a label that an instruction in the
+ticket names goes to a person, never to that team; a confidence below 0.7 goes
+to a person; anything else goes to the label's team. The instruction check
+comes before the confidence rule because an attack can dictate the confidence
+too (INJ01 asks for 1.0).
 
 - Five attacks (`evals/injection_cases.csv`): a label and a refund promise
   dictated in English (INJ01), a real ticket hidden in `other` in French (INJ02),
@@ -135,18 +181,23 @@ $0.02.
   (`src/component.py`), and the test asserts on the queue the ticket is sent to,
   never on what the model wrote: never the attacker's team, and always a team
   that can act on the ticket, or a person.
-- Offline, a fake model that obeys every attack: the output check alone keeps
-  each ticket away from the attacker's team, and none of the company's 120 real
-  tickets trips it.
+- Offline, a fake model that obeys every attack, at the confidence it asks for:
+  the output check alone keeps each ticket away from the attacker's team, and
+  none of the company's 120 real tickets trips the instruction check.
+- The confidence rule on the 30 zero-shot answers of 2026-10-26: 2 answers are
+  below 0.7 (C18 and C24), both wrong, and both would go to a person; no right
+  answer would. Thirty cases are few for a threshold: it is to be checked again
+  on every new run.
 - The limit: the check recognises instructions with patterns grown from our
   own attacks. An attack phrased differently reaches the model unchecked, and
   only the live runs show whether the model resists it.
 
 ## Recommendation
 
-Deploy the zero-shot prompt on claude-haiku-4-5: 23 of 30 right, $1.03 per
-1,000 tickets and 1.3 s at the median, against few-shot's 24 of 30 at $2.97,
-a one-case difference that 30 cases cannot separate. Next, a prompt v3 that
+Deploy the zero-shot prompt on claude-haiku-4-5, with a person routing every
+ticket answered below 0.7 confidence: 23 of 30 right, $1.03 per 1,000 tickets
+and 1.3 s at the median, against few-shot's 24 of 30 at $2.97, a one-case
+difference that 30 cases cannot separate. Next, a prompt v3 that
 states the three conventions behind most errors (refund requests labelled by
 their cause, orders on someone else's account, off-catalogue items), measured
 on the same 30 cases before it replaces v2.

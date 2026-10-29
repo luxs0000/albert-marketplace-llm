@@ -175,20 +175,34 @@ def same_answer(row_a, row_b, tolerance=0.05):
 # --- 4. Calibration: the judge against our own scores ---------------------------------
 
 def calibrate(judged_file, human_file=HUMAN_SCORES):
-    # Compares the judge's overall score with ours on the cases we scored by hand.
+    # Compares the judge's overall score with each member's, on the cases scored by hand.
+    # One row per member and case: two members can score the same ten (column scored_by).
     with open(human_file, encoding="utf-8") as f:
-        human = {r["case_id"]: r for r in csv.DictReader(f) if r["score"].strip()}
+        human = [r for r in csv.DictReader(f) if r["score"].strip()]
     with open(judged_file, encoding="utf-8") as f:
         judged = {r["case_id"]: r for r in csv.DictReader(f)}
     rows = []
-    for case_id, h in human.items():
-        j = judged.get(case_id)
+    for h in human:
+        j = judged.get(h["case_id"])
         if not j or not j.get("judge_score"):
             continue
         hs, js = int(h["score"]), int(j["judge_score"])
-        rows.append({"case_id": case_id, "human": hs, "judge": js, "same_score": hs == js,
+        rows.append({"case_id": h["case_id"], "scored_by": h["scored_by"], "human": hs, "judge": js,
+                     "same_score": hs == js,
                      "same_right": (hs >= RIGHT_SCORE) == (js >= RIGHT_SCORE), "gap": js - hs})
     return rows
+
+
+def members_agreement(human_file=HUMAN_SCORES):
+    # How often two members give the same score to the same answer: the ceiling for the judge
+    with open(human_file, encoding="utf-8") as f:
+        rows = [r for r in csv.DictReader(f) if r["score"].strip()]
+    by_case = {}
+    for r in rows:
+        by_case.setdefault(r["case_id"], {})[r["scored_by"]] = int(r["score"])
+    pairs = [list(v.values())[:2] for v in by_case.values() if len(v) >= 2]
+    return {"cases": len(pairs), "same_score": sum(a == b for a, b in pairs),
+            "same_right": sum((a >= RIGHT_SCORE) == (b >= RIGHT_SCORE) for a, b in pairs)}
 
 
 def main():
@@ -198,14 +212,17 @@ def main():
         rows = calibrate(sys.argv[2])
         if not rows:
             sys.exit(f"no case scored in {HUMAN_SCORES} has a judge score in {sys.argv[2]}")
-        n = len(rows)
-        same = sum(r["same_score"] for r in rows)
-        right = sum(r["same_right"] for r in rows)
-        for r in rows:
-            print(f"{r['case_id']}: us {r['human']}, judge {r['judge']}"
-                  + ("" if r["same_right"] else "   <-- disagree on right / not right"))
-        print(f"\nsame overall score: {same}/{n} | same right / not right: {right}/{n} "
-              f"| judge minus us, mean: {statistics.mean(r['gap'] for r in rows):+.2f}")
+        for member in sorted({r["scored_by"] for r in rows}):
+            mine = [r for r in rows if r["scored_by"] == member]
+            for r in mine:
+                print(f"{r['case_id']}: {member} {r['human']}, judge {r['judge']}"
+                      + ("" if r["same_right"] else "   <-- disagree on right / not right"))
+            print(f"{member}: same overall score {sum(r['same_score'] for r in mine)}/{len(mine)} "
+                  f"| same right / not right {sum(r['same_right'] for r in mine)}/{len(mine)}\n")
+        m = members_agreement()
+        if m["cases"]:
+            print(f"two members: same score {m['same_score']}/{m['cases']} "
+                  f"| same right / not right {m['same_right']}/{m['cases']}")
         return
     sys.exit("usage: python -m src.evaluate calibrate runs/eval/<judged results file>.csv")
 

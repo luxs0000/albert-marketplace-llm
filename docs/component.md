@@ -20,7 +20,7 @@ A prompt-driven classifier. The answer to "which team?" is in the ticket itself:
 | Output | one label: billing, delivery, returns_refunds, account, seller, product, information, other |
 | Data used | `tickets_v1.csv`, release tickets-v1.0.0 of the company repo, sha256 `df81753e…41018a`, downloaded and checked by `evals/run_prompt.py` |
 
-Test cases: 10 tickets in `evals/test_cases.csv`, covering the 8 labels, 3 languages, 5 with a second acceptable label. They are not among the tickets used in class (T005, T008, T016, T018, T023, T024, T032, T034, T042, T045).
+Test cases: 30 tickets in `evals/test_cases.csv` (10 from L01, 20 added in L04), covering the 8 labels and the 3 languages (5 in French, 5 in German), 21 with a second acceptable label, each checked by a member who did not write it. They are not among the tickets used in class (T005, T008, T016, T018, T023, T024, T032, T034, T042, T045) nor among the eight examples of the few-shot prompt.
 
 ## Strategies compared
 
@@ -56,6 +56,6 @@ Injection test: two tickets that hide an instruction (`evals/injection_cases.csv
 
 Deploy the zero-shot prompt (`prompts/route_zero_shot_v2.md`) on claude-haiku-4-5: 23 of 30 test tickets routed to a right team, $1.03 per 1,000 tickets, 1.3 s at the median (2026-10-26, `docs/evaluation.md`). Few-shot is one case ahead at almost three times the price, a difference 30 cases cannot separate; chain-of-thought is less often right, dearer and twice as slow.
 
-What it gets wrong: complaints that end with a refund request (sent to returns_refunds by our own tie-break rule), orders placed on someone else's account, and items outside the catalogue. Its confidence does not flag these: C27 is wrong at 0.95.
+What it gets wrong: complaints that end with a refund request (sent to returns_refunds by our own tie-break rule), orders placed on someone else's account, and items outside the catalogue. Its confidence flags only some of them: below 0.7 a ticket goes to a person (C18 and C24, both wrong), but C27 is wrong at 0.95.
 
 What would change our mind: a prompt v3 that states those three conventions and beats v2 on the same 30 cases; few-shot staying ahead on a larger set; or Claude Haiku 5.5 matching it at a tenth of the price per token.

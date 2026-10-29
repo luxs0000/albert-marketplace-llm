@@ -91,7 +91,9 @@ judge.
 
 ## Calibration
 
-Before its scores are used, the judge is compared with us: two members score
-ten answers by hand with this rubric, without looking at the judge's scores
-(`evals/human_scores.csv`), and `python -m src.evaluate calibrate` reports how
-often the judge agrees (same overall score; same right/not right).
+Before its scores are used, the judge is compared with us: a member scores ten
+answers by hand with this rubric (`evals/human_scores.csv`, one row per member
+and answer), and `python -m src.evaluate calibrate <judged run file>` reports how
+often the judge agrees (same overall score; same right / not right). If a second
+member scores the same ten, it also reports how often the two members agree
+with each other: the best the judge can be asked to do.

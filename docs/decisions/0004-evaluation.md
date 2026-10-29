@@ -83,7 +83,9 @@ right.
    agreed with exact match on every label, the order changed 1 verdict in 18,
    and it gave our own overall score on 9 of the 10 answers we scored by hand
    (the tenth one point harsher).
-3. **Strategy:** zero-shot on claude-haiku-4-5. Few-shot is one case ahead (24
+3. **Strategy:** zero-shot on claude-haiku-4-5, with a person routing every
+   ticket answered below 0.7 confidence (on our 30 cases, the two such answers
+   are both wrong, and no right answer is below 0.7). Few-shot is one case ahead (24
    against 23), which 30 cases cannot separate, at 2.9 times the cost.
    Chain-of-thought is dominated: two cases fewer, 64% dearer, twice as slow.
 

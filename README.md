@@ -21,6 +21,7 @@ an evaluation report, prompt-injection guardrails and a cost per 1,000 calls.
 | Louis Pimont-Nishimura | LesCavesdAlbert | API module and structured output (ADR 0002, L02) |
 | Lucas Stefani | luxs0000 | Retrieval decision and injection test (ADR 0003, L03) |
 | Clément Badalucco | clementbada | Evaluation and cost (ADR 0004, L04) |
+| Khaled Elnagar | khaledngr | Co-author of steps 1 and 2: task, test cases and API module (L01, L02) |
 
 ## How this repo grows
 

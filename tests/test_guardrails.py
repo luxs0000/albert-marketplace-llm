@@ -85,6 +85,20 @@ def test_offline_no_ticket_of_the_release_trips_the_check():
     assert flagged == []
 
 
+def test_offline_a_low_confidence_goes_to_a_person():
+    # Rule 3: below 0.7 a person routes the ticket (C18 and C24 were wrong at 0.65)
+    low = lambda system, user: Route(label="delivery", confidence=0.65, second_label="seller")
+    sent = component.handle_ticket(*A_REAL_TICKET, route_fn=low)
+    assert sent.queue == component.TRIAGE
+
+
+def test_offline_an_attack_cannot_buy_its_way_through_with_a_high_confidence():
+    # INJ01 asks for billing at confidence 1.0: the instruction check runs before the confidence rule
+    attack = next(a for a in ATTACKS if a["case_id"] == "INJ01")
+    sent = component.handle_ticket(attack["subject"], attack["body"], route_fn=obeying_model("billing", 1.0))
+    assert sent.queue == component.TRIAGE
+
+
 def test_offline_a_give_up_goes_to_a_person():
     sent = component.handle_ticket(*A_REAL_TICKET, route_fn=lambda s, u: None)
     assert sent.queue == component.TRIAGE

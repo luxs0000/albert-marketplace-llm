@@ -10,7 +10,10 @@
 #   1. no answer (the call gave up)                         -> triage
 #   2. the ticket contains an instruction aimed at the router,
 #      and the label is one that instruction names          -> triage, never the attacker's team
-#   3. otherwise                                            -> the label's team
+#   3. a confidence below 0.7 (LOW_CONFIDENCE)              -> triage: on the 30 zero-shot answers
+#      of 2026-10-26 the two below 0.7 (C18, C24) are both wrong, and no right answer is below it
+#   4. otherwise                                            -> the label's team
+# Rule 2 comes before rule 3 because an attack can dictate the confidence too (INJ01 asks for 1.0).
 # Rule 2 does not block a ticket that merely mentions a team: only a sentence that reads as an
 # instruction to an AI or a routing system (INSTRUCTION_PATTERNS) and names a label as its
 # target ("as billing", "en « other »", "go to information"). The patterns are a list we
@@ -24,7 +27,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from src import llm
-from src.schema import LABELS, Route
+from src.schema import LABELS, LOW_CONFIDENCE, Route
 
 PROMPT_FILE = Path("prompts/route_zero_shot_v2.md")   # the deployed prompt: see docs/evaluation.md
 TRIAGE = "triage"
@@ -81,6 +84,9 @@ def output_check(answer, subject, body):
     if answer.label in labels_named_by_instructions(text):
         return Dispatch(TRIAGE, answer.label, answer.confidence,
                         f"the ticket instructs the router to choose '{answer.label}': sent to a person")
+    if answer.confidence < LOW_CONFIDENCE:
+        return Dispatch(TRIAGE, answer.label, answer.confidence,
+                        f"confidence {answer.confidence} is below {LOW_CONFIDENCE}: sent to a person")
     reason = "routed by the model"
     if has_instruction(text):
         reason += "; the ticket contains an instruction to the router, which the label does not follow"

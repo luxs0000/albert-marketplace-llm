@@ -55,6 +55,8 @@ What stops an attack today:
 
 What does not stop it: nothing in our code checks that a label was not dictated by the ticket. Ten runs of two attacks on one model show that these attacks did not work, not that none will: lesson 3 measured a model obeying a planted instruction 5 times out of 5 behind a prompt that said not to. And a customer who simply lies about the problem is not an injection, and no defence can catch it.
 
+> **Update, 2026-10-29 (L04):** this gap is now closed. `src/component.py` checks in code, after the model, what is sent: a label that an instruction in the ticket names goes to a person, never to that team, and so does an answer below 0.7 confidence. `tests/test_guardrails.py` runs five attacks (INJ01 to INJ05) three times each against it, and an offline test shows the check blocks them even when the model obeys. See [ADR 0004](0004-evaluation.md) and [docs/evaluation.md](../evaluation.md). The decision of this record, no retrieval, is unchanged.
+
 ## Consequences
 
 - No retrieval code to build or maintain in `src/`.

@@ -17,7 +17,7 @@ A prompt-driven classifier. The answer to "which team?" is in the ticket itself:
 | | |
 |---|---|
 | Input | one ticket: its subject and body, in English, French or German |
-| Output | one label: billing, delivery, returns_refunds, account, seller, product, information, other |
+| Output | the queue the ticket is sent to: one of the eight teams (billing, delivery, returns_refunds, account, seller, product, information, other), or `triage`, a person who routes it by hand when the model gives no valid answer, when the ticket contains an instruction that names the chosen label, or when the confidence is below 0.7 (`src/component.py`); with the model's label, its confidence and the reason |
 | Data used | `tickets_v1.csv`, release tickets-v1.0.0 of the company repo, sha256 `df81753e…41018a`, downloaded and checked by `evals/run_prompt.py` |
 
 Test cases: 30 tickets in `evals/test_cases.csv` (10 from L01, 20 added in L04), covering the 8 labels and the 3 languages (5 in French, 5 in German), 21 with a second acceptable label, each checked by a member who did not write it. They are not among the tickets used in class (T005, T008, T016, T018, T023, T024, T032, T034, T042, T045) nor among the eight examples of the few-shot prompt.
